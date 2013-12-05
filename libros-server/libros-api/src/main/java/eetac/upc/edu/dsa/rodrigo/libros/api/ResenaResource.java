@@ -8,6 +8,7 @@ import java.sql.Statement;
 import javax.sql.DataSource;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -32,7 +33,6 @@ public class ResenaResource {
 
 	// Raul tiene el el Libro collection aqui;
 
-	
 	@POST
 	@Consumes(MediaType.LIBROS_API_RESENA)
 	@Produces(MediaType.LIBROS_API_RESENA)
@@ -49,6 +49,14 @@ public class ResenaResource {
 		 */
 
 		// realizamos conexion
+
+		if (security.isUserInRole("registered")) {			
+			if (!security.getUserPrincipal().getName()
+					.equals(resena.getUsername())) {
+				throw new ForbiddenException("You are nor allowed");
+			}
+		}
+
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
@@ -61,15 +69,18 @@ public class ResenaResource {
 		// leemos lo que nos manda y lo insertamos enla base de datos
 		try {
 			// realizamos la consulta
-			stmt = conn.createStatement();	
-			String sql = "select * from resenas where username='"+resena.getUsername()+"' and libroid='"+resena.getLibroid()+"';";
+			stmt = conn.createStatement();
+			String sql = "select * from resenas where username='"
+					+ resena.getUsername() + "' and libroid='"
+					+ resena.getLibroid() + "';";
 			ResultSet rs = stmt.executeQuery(sql);
-			if(rs.next())
+			if (rs.next())
 				throw new ResenaNotFoundException();
-			
-						
+
 			sql = "insert into resenas (libroid, username, content) ";
-			sql+= "values ("+resena.getLibroid()+", '"+resena.getUsername()+"', '"+resena.getContent()+"');";
+			sql += "values (" + resena.getLibroid() + ", '"
+					+ resena.getUsername() + "', '" + resena.getContent()
+					+ "');";
 			// le indicamos que nso devuelva la primary key que le genere a la
 			// nueva entrada
 			stmt.executeUpdate(sql, Statement.RETURN_GENERATED_KEYS);
@@ -80,7 +91,8 @@ public class ResenaResource {
 				rs.close();
 				// TODO: Retrieve the created sting from the database to get all
 				// the remaining fields
-				sql = "select users.name, resenas.* from users,resenas where resenas.resenaid="+id+" and users.username=resenas.username";
+				sql = "select users.name, resenas.* from users,resenas where resenas.resenaid="
+						+ id + " and users.username=resenas.username";
 
 				rs = stmt.executeQuery(sql);
 				rs.next();
@@ -89,8 +101,9 @@ public class ResenaResource {
 				resena.setContent(rs.getString("content"));
 				resena.setUsername(rs.getString("username"));
 				resena.setLasupdate(rs.getDate("lastUpdate"));
-				//resena.addLink(ResenasAPILinkBuilder.buildURIResenaId(uriInfo, resena.getResenaid()));
-				
+				// resena.addLink(ResenasAPILinkBuilder.buildURIResenaId(uriInfo,
+				// resena.getResenaid()));
+
 			} else {
 				// TODO: Throw exception, something has failed. Don't do now
 			}
@@ -112,34 +125,35 @@ public class ResenaResource {
 		}
 		return resena;
 	}
-	
+
 	@PUT
 	@Path("/{resenaid}")
 	@Consumes(MediaType.LIBROS_API_RESENA)
 	@Produces(MediaType.LIBROS_API_RESENA)
-	public Resena updateSting(@PathParam("resenaid") String resenaid, Resena resena) {
+	public Resena updateSting(@PathParam("resenaid") String resenaid,
+			Resena resena) {
 		// TODO: Update in the database the record identified by stingid with
 		// the data values in sting
 		Statement stmt = null;
-		
-		/*
-		if (sting.getSubject().length() > 100) {
-			throw new BadRequestException(
-					"Subject length must be less or equal than 100 characters");
-		}
-		if (sting.getContent().length() > 500) {
-			throw new BadRequestException(
-					"Content length must be less or equal than 500 characters");
-		}
 
+		/*
+		 * if (sting.getSubject().length() > 100) { throw new
+		 * BadRequestException(
+		 * "Subject length must be less or equal than 100 characters"); } if
+		 * (sting.getContent().length() > 500) { throw new BadRequestException(
+		 * "Content length must be less or equal than 500 characters"); }
+		 * 
+		 * if (security.isUserInRole("registered")) { if
+		 * (security.getUserPrincipal().getName() .equals(sting.getUsername()))
+		 * { throw new ForbiddenException("You are nor allowed"); } }
+		 */
 		if (security.isUserInRole("registered")) {
-			if (security.getUserPrincipal().getName()
-					.equals(sting.getUsername())) {
+			if (!security.getUserPrincipal().getName()
+					.equals(resena.getUsername())) {
 				throw new ForbiddenException("You are nor allowed");
 			}
 		}
-		*/
-		
+
 		// arrancamos la conexion
 		Connection conn = null;
 		try {
@@ -152,23 +166,22 @@ public class ResenaResource {
 
 		// hacemso la consulta
 		try {
-			
+
 			// creamos el statement y la consulta
 			stmt = conn.createStatement();
-			String sql ;
-					
-					
-			sql = "update  resenas SET resenas.content='"					
-					+  resena.getContent()+ "' where resenaid=" + resenaid;
+			String sql;
+
+			sql = "update  resenas SET resenas.content='" + resena.getContent()
+					+ "' where resenaid=" + resenaid;
 			// realizamos la consulta
 
 			int rows = stmt.executeUpdate(sql);
-			
+
 			if (rows == 0)
 				throw new LibroNotFoundException();
 
 			sql = "select * from resenas where resenaid=" + resenaid;
-			
+
 			ResultSet rs = stmt.executeQuery(sql);
 			if (rs.next()) {
 				// creamos la resena
@@ -178,8 +191,9 @@ public class ResenaResource {
 				resena.setContent(rs.getString("content"));
 				resena.setLasupdate(rs.getTimestamp("lastUpdate"));
 				// añadimos los links
-				resena.addLink(ResenasAPILinkBuilder.buildURIResenaId(uriInfo, resena.getResenaid()));
-				
+				resena.addLink(ResenasAPILinkBuilder.buildURIResenaId(uriInfo,
+						resena.getResenaid()));
+
 			} else {
 				throw new LibroNotFoundException();
 			}
@@ -201,7 +215,7 @@ public class ResenaResource {
 
 		return resena;
 	}
-	
+
 	@DELETE
 	@Path("/{resenaid}")
 	public void deleteResena(@PathParam("resenaid") String resenaid) {
@@ -214,20 +228,40 @@ public class ResenaResource {
 			throw new ServiceUnavailableException(e.getMessage());
 		}
 		try {
+			String query = "Select resenas.username from resenas where resenaid="
+					+ resenaid + ";";
 			stmt = con.createStatement();
-			String query = "DELETE FROM resenas WHERE resenaid=" + resenaid + ";";
+			ResultSet rs = stmt.executeQuery(query);
+			if (rs.next()) {
+
+				String username = rs.getString("username");
+				if (security.isUserInRole("registered")) {
+					if (!security.getUserPrincipal().getName().equals(username)) {
+						throw new ForbiddenException("You are nor allowed");
+					}
+				}
+
+			} else {
+				rs.close();
+				throw new LibroNotFoundException();
+			}
+
+			query = "DELETE FROM resenas WHERE resenaid=" + resenaid + ";";
 			int rows = stmt.executeUpdate(query);
 			if (rows == 0)
 				throw new LibroNotFoundException();
+
+			rs.close();
 		} catch (SQLException e) {
 			throw new InternalServerException(e.getMessage());
 		} finally {
 			try {
+
 				con.close();
 				stmt.close();
 			} catch (Exception e) {
 			}
 		}
 	}
-	
+
 }

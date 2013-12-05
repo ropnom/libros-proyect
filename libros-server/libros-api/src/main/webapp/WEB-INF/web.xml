@@ -117,7 +117,7 @@
 	<security-constraint>
 		<web-resource-collection>
 			<web-resource-name>Resenas-admin</web-resource-name>
-			<url-pattern>/resenas/*</url-pattern>
+			<url-pattern>/resena/*</url-pattern>
 			<http-method>GET</http-method>
 			<http-method>PUT</http-method>
 			<http-method>DELETE</http-method>
