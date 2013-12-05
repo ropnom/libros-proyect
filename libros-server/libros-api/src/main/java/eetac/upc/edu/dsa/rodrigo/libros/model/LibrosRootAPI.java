@@ -6,11 +6,11 @@ import java.util.List;
 import eetac.upc.edu.dsa.rodrigo.libros.links.Link;
 
 
-public class BeeterRootAPI {
+public class LibrosRootAPI {
 
 	private List<Link> rw;
 
-	public BeeterRootAPI() {
+	public LibrosRootAPI() {
 		rw = new ArrayList<Link>();
 	}
 
