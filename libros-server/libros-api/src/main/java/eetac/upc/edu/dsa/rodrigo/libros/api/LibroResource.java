@@ -4,18 +4,17 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.SimpleDateFormat;
 
 import javax.sql.DataSource;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
-import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.EntityTag;
@@ -26,7 +25,6 @@ import javax.ws.rs.core.UriInfo;
 
 import eetac.upc.edu.dsa.rodrigo.libros.api.links.LibrosAPILinkBuilder;
 import eetac.upc.edu.dsa.rodrigo.libros.api.model.Libro;
-import eetac.upc.edu.dsa.rodrigo.libros.api.model.LibroCollection;
 
 @Path("/libros")
 public class LibroResource {
@@ -34,22 +32,21 @@ public class LibroResource {
 	@Context
 	private UriInfo uriInfo;
 	private DataSource ds = DataSourceSPA.getInstance().getDataSource();
-	
+
 	@Context
 	private SecurityContext security;
-	
-	//Raul tiene el el Libro collection aqui;
 
-	
+	// Raul tiene el el Libro collection aqui;
+
 	@GET
 	@Path("/{libroid}")
-	@Produces(MediaType.LIBROS_API_LIBRO)	
+	@Produces(MediaType.LIBROS_API_LIBRO)
 	public Response getLibro(@PathParam("libroid") String libroid,
 			@Context Request req) {
-		
+
 		// Create CacheControl cache por si me lohan pedido hace poco
 		CacheControl cc = new CacheControl();
-		Libro libro= new Libro();
+		Libro libro = new Libro();
 		Statement stmt = null;
 
 		// arrancamos la conexion
@@ -66,13 +63,12 @@ public class LibroResource {
 		try {
 			// creamos el statement y la consulta
 			stmt = conn.createStatement();
-			String sql = "select * from libros where libroid="
-					+ libroid;
+			String sql = "select * from libros where libroid=" + libroid;
 			// realizamos la consulta
 			ResultSet rs = stmt.executeQuery(sql);
 
 			if (rs.next()) {
-				// creamos el libro				
+				// creamos el libro
 				libro.setLibroid(rs.getInt("libroid"));
 				libro.setTitulo(rs.getString("titulo"));
 				libro.setAutor(rs.getString("autor"));
@@ -82,7 +78,7 @@ public class LibroResource {
 				libro.setFecha_impresion(rs.getDate("fecha_impresion"));
 				libro.setEditorial(rs.getString("editorial"));
 				libro.setLastUpdate(rs.getTimestamp("lastUpdate"));
-				
+
 				// añadimos los links
 				libro.addLink(LibrosAPILinkBuilder
 						.buildURISting(uriInfo, libro));
@@ -125,6 +121,218 @@ public class LibroResource {
 
 		return rb.build();
 	}
+
+	@POST
+	@Consumes(MediaType.LIBROS_API_LIBRO)
+	@Produces(MediaType.LIBROS_API_LIBRO)
+	public Libro createSting(Libro libro) {
+
+		Statement stmt = null;
+
+		/*
+		 * if (sting.getSubject().length() > 100) { throw new
+		 * BadRequestException(
+		 * "Subject length must be less or equal than 100 characters"); } if
+		 * (sting.getContent().length() > 500) { throw new BadRequestException(
+		 * "Content length must be less or equal than 500 characters"); }
+		 */
+
+		// realizamos conexion
+		Connection conn = null;
+		try {
+			conn = ds.getConnection();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new ServiceUnavailableException(e.getMessage());
+		}
+
+		// leemos lo que nos manda y lo insertamos enla base de datos
+		try {
+			// realizamos la consulta
+			stmt = conn.createStatement();			
+			SimpleDateFormat dt1 = new SimpleDateFormat("yyyy-MM-dd");
+			String edicion = dt1.format(libro.getFecha_edicion());
+			String impresion = dt1.format(libro.getFecha_impresion());
+						
+			String sql = "insert into libros (titulo, autor, lengua, edicion, fecha_edicion, fecha_impresion, editorial)";
+			sql += "values ('" + libro.getTitulo() + "', '" + libro.getAutor()
+					+ "', '" + libro.getLengua() + "','" + libro.getEdicion()
+					+ "','" + edicion + "','"
+					+ impresion + "','" + libro.getEditorial()
+					+ "');";
+
+			// le indicamos que nso devuelva la primary key que le genere a la
+			// nueva entrada
+			stmt.executeUpdate(sql, Statement.RETURN_GENERATED_KEYS);
+			ResultSet rs = stmt.getGeneratedKeys();
+			// leemos la primary key
+			if (rs.next()) {
+				int id = rs.getInt(1);
+				rs.close();
+				// TODO: Retrieve the created sting from the database to get all
+				// the remaining fields
+				sql = "select lastUpdate from libros where libroid="
+						+ id;
+
+				rs = stmt.executeQuery(sql);
+				rs.next();
+				libro.setLibroid(id);
+				libro.setLastUpdate(rs.getTimestamp("lastUpdate"));
+			} else {
+				// TODO: Throw exception, something has failed. Don't do now
+			}
+
+			rs.close();
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new InternalServerException(e.getMessage());
+		} finally {
+
+			try {
+				stmt.close();
+				conn.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		return libro;
+	}
+	
+	@PUT
+	@Path("/{stingid}")
+	@Consumes(MediaType.LIBROS_API_LIBRO)
+	@Produces(MediaType.LIBROS_API_LIBRO)
+	public Libro updateSting(@PathParam("stingid") String libroid, Libro libro) {
+		// TODO: Update in the database the record identified by stingid with
+		// the data values in sting
+		Statement stmt = null;
+		
+		/*
+		if (sting.getSubject().length() > 100) {
+			throw new BadRequestException(
+					"Subject length must be less or equal than 100 characters");
+		}
+		if (sting.getContent().length() > 500) {
+			throw new BadRequestException(
+					"Content length must be less or equal than 500 characters");
+		}
+
+		if (security.isUserInRole("registered")) {
+			if (security.getUserPrincipal().getName()
+					.equals(sting.getUsername())) {
+				throw new ForbiddenException("You are nor allowed");
+			}
+		}
+		*/
+		
+		// arrancamos la conexion
+		Connection conn = null;
+		try {
+			conn = ds.getConnection();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new ServiceUnavailableException(e.getMessage());
+		}
+
+		// hacemso la consulta
+		try {
+			SimpleDateFormat dt1 = new SimpleDateFormat("yyyy-MM-dd");
+			String edicion = dt1.format(libro.getFecha_edicion());
+			String impresion = dt1.format(libro.getFecha_impresion());
+			// creamos el statement y la consulta
+			stmt = conn.createStatement();
+			String sql = "update  libros SET libros.titulo='"
+					+ libro.getTitulo() + "',libros.autor='"
+					+ libro.getAutor() + "', libros.lengua='"
+					+ libro.getLengua() + "', libros.edicion='"
+					+ libro.getEdicion() + "', libros.fecha_edicion='"
+					+ edicion + "', libros.fecha_impresion='"
+					+ impresion + "', libros.editorial='"
+					+  libro.getEditorial()+ "' where libroid=" + libroid;
+			// realizamos la consulta
+
+			int rows = stmt.executeUpdate(sql);
+			
+			if (rows == 0)
+				throw new LibroNotFoundException();
+
+			sql = "select lastUpdate from libros where libroid=" + libroid;
+			
+			ResultSet rs = stmt.executeQuery(sql);
+			if (rs.next()) {
+				// creamos el sting
+				libro.setLastUpdate(rs.getTimestamp("lastUpdate"));
+				// añadimos los links
+				libro.addLink(LibrosAPILinkBuilder
+						.buildURISting(uriInfo, libro));
+			} else {
+				throw new LibroNotFoundException();
+			}
+			rs.close();
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new InternalServerException(e.getMessage());
+		} finally {
+
+			try {
+				stmt.close();
+				conn.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+		return libro;
+	}
+	
+	@DELETE
+	@Path("/{libroid}")
+	public void deleteSting(@PathParam("libroid") String libroid) {
+		// TODO Delete record in database stings identified by stingid.
+		// arrancamos la conexion
+		Statement stmt = null;
+		Connection conn = null;
+		try {
+			conn = ds.getConnection();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new ServiceUnavailableException(e.getMessage());
+		}
+
+		// hacemso la consulta y el array de stings
+		try {
+			// creamos el statement y la consulta
+			stmt = conn.createStatement();
+			String sql = "Delete from  libros where libroid=" + libroid;
+			// realizamos la consulta
+
+			int rows = stmt.executeUpdate(sql);
+			if (rows == 0)
+				throw new LibroNotFoundException();
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new InternalServerException(e.getMessage());
+		} finally {
+
+			try {
+				stmt.close();
+				conn.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+
 	/*
 	// realizamos los metodos GET que nos devuevle los stings de la base de
 	// datos
@@ -237,198 +445,9 @@ public class LibroResource {
 	}
 
 	// realizamos el metodo POST
-	@POST
-	@Consumes(MediaType.LIBROS_API_LIBRO)
-	@Produces(MediaType.LIBROS_API_LIBRO)
-	public Sting createSting(Sting sting) {
-
-		Statement stmt = null;
-
-		if (sting.getSubject().length() > 100) {
-			throw new BadRequestException(
-					"Subject length must be less or equal than 100 characters");
-		}
-		if (sting.getContent().length() > 500) {
-			throw new BadRequestException(
-					"Content length must be less or equal than 500 characters");
-		}
-		// realizamos conexion
-		Connection conn = null;
-		try {
-			conn = ds.getConnection();
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new ServiceUnavailableException(e.getMessage());
-		}
-
-		// leemos lo que nos manda y lo insertamos enla base de datos
-		try {
-			// realizamos la consulta
-			stmt = conn.createStatement();
-			String sql = "insert into stings (username, content, subject) values ('"
-					+ sting.getUsername()
-					+ "', '"
-					+ sting.getContent()
-					+ "', '" + sting.getSubject() + "')";
-
-			// le indicamos que nso devuelva la primary key que le genere a la
-			// nueva entrada
-			stmt.executeUpdate(sql, Statement.RETURN_GENERATED_KEYS);
-			ResultSet rs = stmt.getGeneratedKeys();
-			// leemos la primary key
-			if (rs.next()) {
-				int stingid = rs.getInt(1);
-				rs.close();
-				// TODO: Retrieve the created sting from the database to get all
-				// the remaining fields
-				sql = "select last_modified from stings where stingid="
-						+ stingid;
-
-				rs = stmt.executeQuery(sql);
-				rs.next();
-				sting.setStingid(Integer.toString(stingid));
-				sting.setLastModified(rs.getTimestamp("last_modified"));
-			} else {
-				// TODO: Throw exception, something has failed. Don't do now
-			}
-
-			rs.close();
-
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new InternalServerException(e.getMessage());
-		} finally {
-
-			try {
-				stmt.close();
-				conn.close();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-		return sting;
-	}
 
 	
-
-	@DELETE
-	@Path("/{stingid}")
-	public void deleteSting(@PathParam("stingid") String stingid) {
-		// TODO Delete record in database stings identified by stingid.
-		// arrancamos la conexion
-		Statement stmt = null;
-		Connection conn = null;
-		try {
-			conn = ds.getConnection();
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new ServiceUnavailableException(e.getMessage());
-		}
-
-		// hacemso la consulta y el array de stings
-		try {
-			// creamos el statement y la consulta
-			stmt = conn.createStatement();
-			String sql = "Delete from  stings where stingid=" + stingid;
-			// realizamos la consulta
-
-			int rows = stmt.executeUpdate(sql);
-			if (rows == 0)
-				throw new StingNotFoundException();
-
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new InternalServerException(e.getMessage());
-		} finally {
-
-			try {
-				stmt.close();
-				conn.close();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-	}
-
-	@PUT
-	@Path("/{stingid}")
-	@Consumes(MediaType.LIBROS_API_LIBRO)
-	@Produces(MediaType.LIBROS_API_LIBRO)
-	public Sting updateSting(@PathParam("stingid") String stingid, Sting sting) {
-		// TODO: Update in the database the record identified by stingid with
-		// the data values in sting
-		Statement stmt = null;
-
-		if (sting.getSubject().length() > 100) {
-			throw new BadRequestException(
-					"Subject length must be less or equal than 100 characters");
-		}
-		if (sting.getContent().length() > 500) {
-			throw new BadRequestException(
-					"Content length must be less or equal than 500 characters");
-		}
-
-		if (security.isUserInRole("registered")) {
-			if (security.getUserPrincipal().getName()
-					.equals(sting.getUsername())) {
-				throw new ForbiddenException("You are nor allowed");
-			}
-		}
-
-		// arrancamos la conexion
-		Connection conn = null;
-		try {
-			conn = ds.getConnection();
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new ServiceUnavailableException(e.getMessage());
-		}
-
-		// hacemso la consulta
-		try {
-			// creamos el statement y la consulta
-			stmt = conn.createStatement();
-			String sql = "update  stings SET stings.username='"
-					+ sting.getUsername() + "',stings.content='"
-					+ sting.getContent() + "', stings.subject='"
-					+ sting.getSubject() + "' where stingid=" + stingid;
-			// realizamos la consulta
-
-			int rows = stmt.executeUpdate(sql);
-			if (rows == 0)
-				throw new StingNotFoundException();
-
-			sql = "select last_modified from stings where stingid=" + stingid;
-			ResultSet rs = stmt.executeQuery(sql);
-			if (rs.next()) {
-				// creamos el sting
-				sting.setLastModified(rs.getTimestamp("last_modified"));
-			} else {
-				throw new StingNotFoundException();
-			}
-			rs.close();
-
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new InternalServerException(e.getMessage());
-		} finally {
-
-			try {
-				stmt.close();
-				conn.close();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-
-		return sting;
-	}
+	
 
 	@GET
 	@Path("/search")
@@ -503,6 +522,5 @@ public class LibroResource {
 		}
 		return stings;
 	}
-
 */
 }
