@@ -87,9 +87,9 @@ public class ResenaResource {
 				resena.setResenaid(id);
 				resena.setLibroid(rs.getInt("libroid"));
 				resena.setContent(rs.getString("content"));
-				resena.setUsername(rs.getString("content"));
+				resena.setUsername(rs.getString("username"));
 				resena.setLasupdate(rs.getDate("lastUpdate"));
-				resena.addLink(ResenasAPILinkBuilder.buildURIResenaId(uriInfo, resena.getResenaid()));
+				//resena.addLink(ResenasAPILinkBuilder.buildURIResenaId(uriInfo, resena.getResenaid()));
 				
 			} else {
 				// TODO: Throw exception, something has failed. Don't do now
