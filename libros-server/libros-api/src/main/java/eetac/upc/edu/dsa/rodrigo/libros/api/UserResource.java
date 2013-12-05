@@ -19,8 +19,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.UriInfo;
 
-import eetac.upc.edu.dsa.rodrigo.libros.model.User;
-import eetac.upc.edu.dsa.rodrigo.libros.model.UserCollection;
+import eetac.upc.edu.dsa.rodrigo.libros.api.model.User;
+import eetac.upc.edu.dsa.rodrigo.libros.api.model.UserCollection;
 
 
 @Path("/users")

@@ -24,9 +24,9 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 
-import eetac.upc.edu.dsa.rodrigo.libros.links.LibrosAPILinkBuilder;
-import eetac.upc.edu.dsa.rodrigo.libros.model.Libro;
-import eetac.upc.edu.dsa.rodrigo.libros.model.LibroCollection;
+import eetac.upc.edu.dsa.rodrigo.libros.api.links.LibrosAPILinkBuilder;
+import eetac.upc.edu.dsa.rodrigo.libros.api.model.Libro;
+import eetac.upc.edu.dsa.rodrigo.libros.api.model.LibroCollection;
 
 @Path("/libros")
 public class LibroResource {
@@ -43,7 +43,7 @@ public class LibroResource {
 	
 	@GET
 	@Path("/{libroid}")
-	@Produces(MediaType.LIBROS_API_LIBRO)
+	@Produces(MediaType.LIBROS_API_LIBRO)	
 	public Response getLibro(@PathParam("libroid") String libroid,
 			@Context Request req) {
 		
@@ -66,7 +66,7 @@ public class LibroResource {
 		try {
 			// creamos el statement y la consulta
 			stmt = conn.createStatement();
-			String sql = "select * from libro where libroid="
+			String sql = "select * from libros where libroid="
 					+ libroid;
 			// realizamos la consulta
 			ResultSet rs = stmt.executeQuery(sql);

@@ -1,4 +1,4 @@
-package eetac.upc.edu.dsa.rodrigo.libros.links;
+package eetac.upc.edu.dsa.rodrigo.libros.api.links;
 
 import java.net.URI;
 
@@ -7,7 +7,7 @@ import javax.ws.rs.core.UriInfo;
 import eetac.upc.edu.dsa.rodrigo.libros.api.LibroResource;
 import eetac.upc.edu.dsa.rodrigo.libros.api.LibrosRootAPIResource;
 import eetac.upc.edu.dsa.rodrigo.libros.api.MediaType;
-import eetac.upc.edu.dsa.rodrigo.libros.model.Libro;
+import eetac.upc.edu.dsa.rodrigo.libros.api.model.Libro;
 
 
 
