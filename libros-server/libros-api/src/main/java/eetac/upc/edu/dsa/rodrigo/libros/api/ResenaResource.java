@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.text.SimpleDateFormat;
 
 import javax.sql.DataSource;
 import javax.ws.rs.Consumes;
@@ -18,8 +17,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 
-import eetac.upc.edu.dsa.rodrigo.libros.api.links.LibrosAPILinkBuilder;
-import eetac.upc.edu.dsa.rodrigo.libros.api.model.Libro;
+import eetac.upc.edu.dsa.rodrigo.libros.api.links.ResenasAPILinkBuilder;
 import eetac.upc.edu.dsa.rodrigo.libros.api.model.Resena;
 
 @Path("/resena")
@@ -91,7 +89,7 @@ public class ResenaResource {
 				resena.setContent(rs.getString("content"));
 				resena.setUsername(rs.getString("content"));
 				resena.setLasupdate(rs.getDate("lastUpdate"));
-				//resena.addLink(LibrosAPILinkBuilder.buildURISting(uriInfo, libro));
+				resena.addLink(ResenasAPILinkBuilder.buildURIResenaId(uriInfo, resena.getResenaid()));
 				
 			} else {
 				// TODO: Throw exception, something has failed. Don't do now
@@ -180,7 +178,7 @@ public class ResenaResource {
 				resena.setContent(rs.getString("content"));
 				resena.setLasupdate(rs.getTimestamp("lastUpdate"));
 				// añadimos los links
-				//libro.addLink(LibrosAPILinkBuilder.buildURISting(uriInfo, libro));
+				resena.addLink(ResenasAPILinkBuilder.buildURIResenaId(uriInfo, resena.getResenaid()));
 				
 			} else {
 				throw new LibroNotFoundException();
