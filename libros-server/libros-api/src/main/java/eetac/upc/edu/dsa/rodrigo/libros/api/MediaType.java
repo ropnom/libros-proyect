@@ -12,5 +12,7 @@ public interface MediaType {
 	
 	public final static String LIBROS_API_LIBRO = "application/vnd.libros.api.libro+json";
 	public final static String LIBROS_API_LIBRO_COLLECTION = "application/vnd.libros.api.libro.collection+json";
+	
+	public final static String LIBROS_API_RESENA = "application/vnd.libros.api.resena+json";	
 
 }

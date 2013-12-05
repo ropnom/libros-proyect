@@ -15,6 +15,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.EntityTag;
@@ -25,6 +26,7 @@ import javax.ws.rs.core.UriInfo;
 
 import eetac.upc.edu.dsa.rodrigo.libros.api.links.LibrosAPILinkBuilder;
 import eetac.upc.edu.dsa.rodrigo.libros.api.model.Libro;
+import eetac.upc.edu.dsa.rodrigo.libros.api.model.LibroCollection;
 
 @Path("/libros")
 public class LibroResource {
@@ -125,7 +127,7 @@ public class LibroResource {
 	@POST
 	@Consumes(MediaType.LIBROS_API_LIBRO)
 	@Produces(MediaType.LIBROS_API_LIBRO)
-	public Libro createSting(Libro libro) {
+	public Libro createLibro(Libro libro) {
 
 		Statement stmt = null;
 
@@ -202,10 +204,10 @@ public class LibroResource {
 	}
 	
 	@PUT
-	@Path("/{stingid}")
+	@Path("/{libroid}")
 	@Consumes(MediaType.LIBROS_API_LIBRO)
 	@Produces(MediaType.LIBROS_API_LIBRO)
-	public Libro updateSting(@PathParam("stingid") String libroid, Libro libro) {
+	public Libro updateLibro(@PathParam("libroid") String libroid, Libro libro) {
 		// TODO: Update in the database the record identified by stingid with
 		// the data values in sting
 		Statement stmt = null;
@@ -293,7 +295,7 @@ public class LibroResource {
 	
 	@DELETE
 	@Path("/{libroid}")
-	public void deleteSting(@PathParam("libroid") String libroid) {
+	public void deleteLibro(@PathParam("libroid") String libroid) {
 		// TODO Delete record in database stings identified by stingid.
 		// arrancamos la conexion
 		Statement stmt = null;
@@ -331,6 +333,94 @@ public class LibroResource {
 			}
 		}
 	}
+	
+	@GET
+	@Path("/search")
+	@Produces(MediaType.LIBROS_API_LIBRO_COLLECTION)
+	public LibroCollection getSearch(@QueryParam("titulo") String titulo,
+			@QueryParam("autor") String autor,
+			 @Context Request req) {
+		
+		boolean caso = true;;
+		
+		if (titulo == null && autor== null)
+			throw new BadRequestException(
+					"Titulo or Autor is mandatory parameter");		
+		if(titulo==null)
+			caso = false;
+		
+
+		// TODO: Retrieve all stings stored in the database, instantiate one
+		// Sting for each one and store them in the StingCollection.
+
+		LibroCollection libros = new LibroCollection();
+		Connection con = null;
+		Statement stmt = null;
+		try {
+			con = ds.getConnection();
+			stmt = con.createStatement();
+		} catch (SQLException e) {
+			throw new ServiceUnavailableException(e.getMessage());
+		}
+		String[] palabras;
+		String busqueda;
+		if(caso)
+		{
+		 titulo.replace("^A-Za-z\\s]", "");			
+		 palabras = titulo.split(" ");
+		 busqueda = "titulo";
+		}
+		else
+		{
+		 autor.replace("^A-Za-z\\s]", "");			
+		 palabras = autor.split(" ");
+		 busqueda = "autor";
+		}
+		try {
+			
+			int i = 1;
+			String query = "Select * from libros where ";
+			query += "libros."+busqueda+" LIKE '%"+palabras[0]+"%' ";
+			
+			while(i<palabras.length)
+			{
+				query += "or libros."+busqueda+" LIKE '%"+palabras[i]+"%' ";
+				i++;
+			}
+			query += ";";			
+			ResultSet rs = stmt.executeQuery(query);
+			
+			while (rs.next()) {
+				
+				Libro s = new Libro();
+				s.setLibroid(rs.getInt("libroid"));
+				s.setTitulo(rs.getString("titulo"));
+				s.setAutor(rs.getString("autor"));
+				s.setLengua(rs.getString("lengua"));
+				s.setEdicion(rs.getString("edicion"));
+				s.setFecha_edicion(rs.getDate("fecha_edicion"));
+				s.setFecha_impresion(rs.getDate("fecha_impresion"));
+				s.setEditorial(rs.getString("editorial"));
+				s.setLastUpdate(rs.getTimestamp("lastUpdate"));
+				s.addLink(LibrosAPILinkBuilder
+						.buildURISting(uriInfo, s));
+				
+				libros.add(s);
+			}
+			rs.close();
+		} catch (SQLException e) {
+			throw new InternalServerException(e.getMessage());
+		} finally {
+			try {
+				con.close();
+				stmt.close();
+			} catch (Exception e) {
+			}
+		}
+		return libros;
+	}
+	
+	
 
 
 	/*
@@ -449,78 +539,6 @@ public class LibroResource {
 	
 	
 
-	@GET
-	@Path("/search")
-	@Produces(MediaType.LIBROS_API_LIBRO_COLLECTION)
-	public StingCollection getSearch(@QueryParam("pattern") String pattern,
-			@QueryParam("offset") String offset,
-			@QueryParam("length") String length, @Context Request req) {
-		if ((offset == null) || (length == null))
-			throw new BadRequestException(
-					"offset and length are mandatory parameters");
-		int ioffset, ilength;
-		try {
-			ioffset = Integer.parseInt(offset);
-			if (ioffset < 0)
-				throw new NumberFormatException();
-		} catch (NumberFormatException e) {
-			throw new BadRequestException(
-					"offset must be an integer greater or equal than 0.");
-		}
-		try {
-			ilength = Integer.parseInt(length);
-			if (ilength < 1)
-				throw new NumberFormatException();
-		} catch (NumberFormatException e) {
-			throw new BadRequestException(
-					"length must be an integer greater or equal than 0.");
-		}
-
-		// TODO: Retrieve all stings stored in the database, instantiate one
-		// Sting for each one and store them in the StingCollection.
-
-		StingCollection stings = new StingCollection();
-		Connection con = null;
-		Statement stmt = null;
-		try {
-			con = ds.getConnection();
-			stmt = con.createStatement();
-		} catch (SQLException e) {
-			throw new ServiceUnavailableException(e.getMessage());
-		}
-
-		try {
-			String query = "SELECT stings.*, users.name FROM stings INNER JOIN users ON (users.username=stings.username) WHERE subject LIKE '%"
-					+ pattern
-					+ "%' OR content LIKE '%"
-					+ pattern
-					+ "%' ORDER BY last_modified desc LIMIT "
-					+ offset
-					+ ", "
-					+ length + ";";
-			ResultSet rs = stmt.executeQuery(query);
-			while (rs.next()) {
-				Sting s = new Sting();
-				s.setAuthor(rs.getString("username"));
-				s.setContent(rs.getString("content"));
-				s.setLastModified(rs.getTimestamp("last_modified"));
-				s.setStingid(rs.getString("stingid"));
-				s.setSubject(rs.getString("subject"));
-				s.setUsername(rs.getString("username"));
-				s.addLink(BeeterAPILinkBuilder.buildURISting(uriInfo, s));
-				stings.addSting(s);
-			}
-			rs.close();
-		} catch (SQLException e) {
-			throw new InternalServerException(e.getMessage());
-		} finally {
-			try {
-				con.close();
-				stmt.close();
-			} catch (Exception e) {
-			}
-		}
-		return stings;
-	}
+	
 */
 }
