@@ -7,7 +7,7 @@
     <artifactId>libros-server</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <groupId>eetac.upc.edu.dsa.rodrigo.libros.api</groupId>
+  <groupId>eetac.upc.edu.dsa.rodrigo</groupId>
   <artifactId>libros-api</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>war</packaging>
@@ -36,12 +36,7 @@
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>
 			<version>5.1.26</version>
-		</dependency>
-		<dependency>
-			<groupId>com.thetransactioncompany</groupId>
-			<artifactId>cors-filter</artifactId>
-			<version>1.7.1</version>
-		</dependency>
+		</dependency>		
   </dependencies>
   <build>
     <finalName>libros-api</finalName>

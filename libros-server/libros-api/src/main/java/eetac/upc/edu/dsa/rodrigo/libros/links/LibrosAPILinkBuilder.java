@@ -4,20 +4,20 @@ import java.net.URI;
 
 import javax.ws.rs.core.UriInfo;
 
-import eetac.upc.edu.dsa.rodrigo.libros.api.BeeterRootAPIResource;
+import eetac.upc.edu.dsa.rodrigo.libros.api.LibroResource;
+import eetac.upc.edu.dsa.rodrigo.libros.api.LibrosRootAPIResource;
 import eetac.upc.edu.dsa.rodrigo.libros.api.MediaType;
-import eetac.upc.edu.dsa.rodrigo.libros.api.StingResource;
-import eetac.upc.edu.dsa.rodrigo.libros.model.Sting;
+import eetac.upc.edu.dsa.rodrigo.libros.model.Libro;
 
 
 
 
-public class BeeterAPILinkBuilder {
+public class LibrosAPILinkBuilder {
 	
 	public final static Link buildURIRootAPI(UriInfo uriInfo) {
 		//devuelve el http:server:8000/proyecto/
 		URI uriRoot = uriInfo.getBaseUriBuilder()
-				.path(BeeterRootAPIResource.class).build();
+				.path(LibrosRootAPIResource.class).build();
 		//lo de encima referencia a la clase
 		
 		Link link = new Link();
@@ -25,9 +25,9 @@ public class BeeterAPILinkBuilder {
 		//apuntador a mi mismo
 		link.setRel("self bookmark");
 		//titulo descriptivo
-		link.setTitle("Beeter API");
+		link.setTitle("Libros API");
 		//devolver uan coleccionde enlaces
-		link.setType(MediaType.BEETER_API_LINK_COLLECTION);
+		link.setType(MediaType.LIBROS_API_LINK_COLLECTION);
  
 		return link;
 	}
@@ -40,32 +40,32 @@ public class BeeterAPILinkBuilder {
 	public static final Link buildURIStings(UriInfo uriInfo, String offset,
 			String length, String username, String rel) {
 		
-		URI uriStings;
+		URI uriLibros;
 		//calcula cual delso 3 casos tiene que hacer
 		if (offset == null && length == null)
 			//me esta añdiendo el @path("/stings")
-			uriStings = uriInfo.getBaseUriBuilder().path(StingResource.class)
+			uriLibros = uriInfo.getBaseUriBuilder().path(LibroResource.class)
 					.build();
 		else {
 			
 			//esta añde la base + los paremtrosde plantilla
 			if (username == null)
-				uriStings = uriInfo.getBaseUriBuilder()
-						.path(StingResource.class).queryParam("offset", offset)
+				uriLibros = uriInfo.getBaseUriBuilder()
+						.path(LibroResource.class).queryParam("offset", offset)
 						.queryParam("length", length).build();
 			else
 				//esta añade base + plantilla  con nombre incluido
-				uriStings = uriInfo.getBaseUriBuilder()
-						.path(StingResource.class).queryParam("offset", offset)
+				uriLibros = uriInfo.getBaseUriBuilder()
+						.path(LibroResource.class).queryParam("offset", offset)
 						.queryParam("length", length)
 						.queryParam("username", username).build();
 		}
  
 		Link self = new Link();
-		self.setUri(uriStings.toString());
+		self.setUri(uriLibros.toString());
 		self.setRel(rel);
-		self.setTitle("Stings collection");
-		self.setType(MediaType.BEETER_API_STING_COLLECTION);
+		self.setTitle("Libros collection");
+		self.setType(MediaType.LIBROS_API_LIBRO_COLLECTION);
  
 		return self;
 	}
@@ -78,51 +78,51 @@ public class BeeterAPILinkBuilder {
  
 	public static final Link buildTemplatedURIStings(UriInfo uriInfo,
 			String rel, boolean username) {
-		URI uriStings;
+		URI uriLibros;
 		if (username)
-			uriStings = uriInfo.getBaseUriBuilder().path(StingResource.class)
+			uriLibros = uriInfo.getBaseUriBuilder().path(LibroResource.class)
 					.queryParam("offset", "{offset}")
 					.queryParam("length", "{length}")
 					.queryParam("username", "{username}").build();
 		else
-			uriStings = uriInfo.getBaseUriBuilder().path(StingResource.class)
+			uriLibros = uriInfo.getBaseUriBuilder().path(LibroResource.class)
 					.queryParam("offset", "{offset}")
 					.queryParam("length", "{length}").build();
  
 		Link link = new Link();
-		link.setUri(URITemplateBuilder.buildTemplatedURI(uriStings));
+		link.setUri(URITemplateBuilder.buildTemplatedURI(uriLibros));
 		link.setRel(rel);
 		if (username)
-			link.setTitle("Stings collection resource filtered by {username}");
+			link.setTitle("Libros collection resource filtered by {username}");
 		else
 			link.setTitle("Stings collection resource");
-		link.setType(MediaType.BEETER_API_STING_COLLECTION);
+		link.setType(MediaType.LIBROS_API_LIBRO_COLLECTION);
  
 		return link;
 	}
  
 	//envia al metodos  direccion/stings
-	public final static Link buildURISting(UriInfo uriInfo, Sting sting) {
-		URI stingURI = uriInfo.getBaseUriBuilder().path(StingResource.class).build();
+	public final static Link buildURISting(UriInfo uriInfo, Libro libro) {
+		URI stingURI = uriInfo.getBaseUriBuilder().path(LibroResource.class).build();
 		Link link = new Link();
 		link.setUri(stingURI.toString());
 		link.setRel("self");
-		link.setTitle("Sting " + sting.getStingid());
-		link.setType(MediaType.BEETER_API_STING);
+		link.setTitle("Libro " + libro.getLibroid());
+		link.setType(MediaType.LIBROS_API_LIBRO);
  
 		return link;
 	}
  
 	// envia al metodo direcion/stings/stingid
-	public final static Link buildURIStingId(UriInfo uriInfo, String stingid,
+	public final static Link buildURIStingId(UriInfo uriInfo, String libroid,
 			String rel) {
-		URI stingURI = uriInfo.getBaseUriBuilder().path(StingResource.class)
-				.path(StingResource.class, "getSting").build(stingid);
+		URI stingURI = uriInfo.getBaseUriBuilder().path(LibroResource.class)
+				.path(LibroResource.class, "getLibro").build(libroid);
 		Link link = new Link();
 		link.setUri(stingURI.toString());
 		link.setRel("self");
-		link.setTitle("Sting " + stingid);
-		link.setType(MediaType.BEETER_API_STING);
+		link.setTitle("Libro " + libroid);
+		link.setType(MediaType.LIBROS_API_LIBRO);
  
 		return link;
 	}

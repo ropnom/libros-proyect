@@ -24,26 +24,113 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 
-import eetac.upc.edu.dsa.rodrigo.libros.links.BeeterAPILinkBuilder;
-import eetac.upc.edu.dsa.rodrigo.libros.model.Sting;
-import eetac.upc.edu.dsa.rodrigo.libros.model.StingCollection;
+import eetac.upc.edu.dsa.rodrigo.libros.links.LibrosAPILinkBuilder;
+import eetac.upc.edu.dsa.rodrigo.libros.model.Libro;
+import eetac.upc.edu.dsa.rodrigo.libros.model.LibroCollection;
 
-
-@Path("/stings")
-public class StingResource {
+@Path("/libros")
+public class LibroResource {
 
 	@Context
 	private UriInfo uriInfo;
 	private DataSource ds = DataSourceSPA.getInstance().getDataSource();
-
+	
 	@Context
 	private SecurityContext security;
+	
+	//Raul tiene el el Libro collection aqui;
 
+	
+	@GET
+	@Path("/{libroid}")
+	@Produces(MediaType.LIBROS_API_LIBRO)
+	public Response getLibro(@PathParam("libroid") String libroid,
+			@Context Request req) {
+		
+		// Create CacheControl cache por si me lohan pedido hace poco
+		CacheControl cc = new CacheControl();
+		Libro libro= new Libro();
+		Statement stmt = null;
+
+		// arrancamos la conexion
+		Connection conn = null;
+		try {
+			conn = ds.getConnection();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new ServiceUnavailableException(e.getMessage());
+		}
+
+		// hacemso la consulta del libro
+		try {
+			// creamos el statement y la consulta
+			stmt = conn.createStatement();
+			String sql = "select * from libro where libroid="
+					+ libroid;
+			// realizamos la consulta
+			ResultSet rs = stmt.executeQuery(sql);
+
+			if (rs.next()) {
+				// creamos el libro				
+				libro.setLibroid(rs.getInt("libroid"));
+				libro.setTitulo(rs.getString("titulo"));
+				libro.setAutor(rs.getString("autor"));
+				libro.setLengua(rs.getString("lengua"));
+				libro.setEdicion(rs.getString("edicion"));
+				libro.setFecha_edicion(rs.getDate("fecha_edicion"));
+				libro.setFecha_impresion(rs.getDate("fecha_impresion"));
+				libro.setEditorial(rs.getString("editorial"));
+				libro.setLastUpdate(rs.getTimestamp("lastUpdate"));
+				
+				// añadimos los links
+				libro.addLink(LibrosAPILinkBuilder
+						.buildURISting(uriInfo, libro));
+			} else {
+				throw new LibroNotFoundException();
+			}
+			rs.close();
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new InternalServerException(e.getMessage());
+		} finally {
+
+			try {
+				stmt.close();
+				conn.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+		// Calculate the ETag on last modified date of user resource
+		EntityTag eTag = new EntityTag(Integer.toString(libro.getLastUpdate()
+				.hashCode()));
+
+		// Verify if it matched with etag available in http request
+		Response.ResponseBuilder rb = req.evaluatePreconditions(eTag);
+
+		// If ETag matches the rb will be non-null;
+		// Use the rb to return the response without any further processing
+		if (rb != null) {
+			return rb.cacheControl(cc).tag(eTag).build();
+		}
+
+		// If rb is null then either it is first time request; or resource is
+		// modified
+		// Get the updated representation and return with Etag attached to it
+		rb = Response.ok(libro).cacheControl(cc).tag(eTag);
+
+		return rb.build();
+	}
+	/*
 	// realizamos los metodos GET que nos devuevle los stings de la base de
 	// datos
 	@GET
-	@Produces(MediaType.BEETER_API_STING_COLLECTION)
-	public StingCollection getStings(@QueryParam("username") String username,
+	@Produces(MediaType.LIBROS_API_LIBRO_COLLECTION)
+	public LibroCollection getStings(@QueryParam("username") String username,
 			@QueryParam("offset") String offset,
 			@QueryParam("length") String length) {
 
@@ -68,7 +155,7 @@ public class StingResource {
 					"length must be an integer greater or equal than 0.");
 		}
 
-		StingCollection stings = new StingCollection();
+		LibroCollection stings = new LibroCollection();
 
 		Statement stmt = null;
 
@@ -107,9 +194,9 @@ public class StingResource {
 				sting.setContent(rs.getString("content"));
 				sting.setSubject(rs.getString("subject"));
 				sting.setLastModified(rs.getTimestamp("last_modified"));
-				
+
 				// añadimos los links
-				sting.addLink(BeeterAPILinkBuilder
+				sting.addLink(LibrosAPILinkBuilder
 						.buildURISting(uriInfo, sting));
 
 				// añadimos el sting a la lista
@@ -151,8 +238,8 @@ public class StingResource {
 
 	// realizamos el metodo POST
 	@POST
-	@Consumes(MediaType.BEETER_API_STING)
-	@Produces(MediaType.BEETER_API_STING)
+	@Consumes(MediaType.LIBROS_API_LIBRO)
+	@Produces(MediaType.LIBROS_API_LIBRO)
 	public Sting createSting(Sting sting) {
 
 		Statement stmt = null;
@@ -224,86 +311,7 @@ public class StingResource {
 		return sting;
 	}
 
-	@GET
-	@Path("/{stingid}")
-	@Produces(MediaType.BEETER_API_STING)
-	public Response getSting(@PathParam("stingid") String stingid,
-			@Context Request req) {
-		// Create CacheControl
-		CacheControl cc = new CacheControl();
-
-		Sting sting = new Sting();
-
-		Statement stmt = null;
-
-		// arrancamos la conexion
-		Connection conn = null;
-		try {
-			conn = ds.getConnection();
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new ServiceUnavailableException(e.getMessage());
-		}
-
-		// hacemso la consulta y el array de stings
-		try {
-			// creamos el statement y la consulta
-			stmt = conn.createStatement();
-			String sql = "select users.name, stings.* from users, stings where users.username=stings.username and stingid="
-					+ stingid;
-			// realizamos la consulta
-			ResultSet rs = stmt.executeQuery(sql);
-
-			if (rs.next()) {
-				// creamos el sting
-				sting.setUsername(rs.getString("username"));
-				sting.setAuthor(rs.getString("name"));
-				sting.setContent(rs.getString("content"));
-				sting.setSubject(rs.getString("subject"));
-				sting.setLastModified(rs.getTimestamp("last_modified"));
-				// añadimos los links				
-				sting.addLink(BeeterAPILinkBuilder
-						.buildURISting(uriInfo, sting));
-			} else {
-				throw new StingNotFoundException();
-			}
-			rs.close();
-
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new InternalServerException(e.getMessage());
-		} finally {
-
-			try {
-				stmt.close();
-				conn.close();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-
-		// Calculate the ETag on last modified date of user resource
-		EntityTag eTag = new EntityTag(Integer.toString(sting.getLastModified()
-				.hashCode()));
-
-		// Verify if it matched with etag available in http request
-		Response.ResponseBuilder rb = req.evaluatePreconditions(eTag);
-
-		// If ETag matches the rb will be non-null;
-		// Use the rb to return the response without any further processing
-		if (rb != null) {
-			return rb.cacheControl(cc).tag(eTag).build();
-		}
-
-		// If rb is null then either it is first time request; or resource is
-		// modified
-		// Get the updated representation and return with Etag attached to it
-		rb = Response.ok(sting).cacheControl(cc).tag(eTag);
-
-		return rb.build();
-	}
+	
 
 	@DELETE
 	@Path("/{stingid}")
@@ -348,8 +356,8 @@ public class StingResource {
 
 	@PUT
 	@Path("/{stingid}")
-	@Consumes(MediaType.BEETER_API_STING)
-	@Produces(MediaType.BEETER_API_STING)
+	@Consumes(MediaType.LIBROS_API_LIBRO)
+	@Produces(MediaType.LIBROS_API_LIBRO)
 	public Sting updateSting(@PathParam("stingid") String stingid, Sting sting) {
 		// TODO: Update in the database the record identified by stingid with
 		// the data values in sting
@@ -424,7 +432,7 @@ public class StingResource {
 
 	@GET
 	@Path("/search")
-	@Produces(MediaType.BEETER_API_STING_COLLECTION)
+	@Produces(MediaType.LIBROS_API_LIBRO_COLLECTION)
 	public StingCollection getSearch(@QueryParam("pattern") String pattern,
 			@QueryParam("offset") String offset,
 			@QueryParam("length") String length, @Context Request req) {
@@ -451,7 +459,7 @@ public class StingResource {
 
 		// TODO: Retrieve all stings stored in the database, instantiate one
 		// Sting for each one and store them in the StingCollection.
-		
+
 		StingCollection stings = new StingCollection();
 		Connection con = null;
 		Statement stmt = null;
@@ -469,7 +477,8 @@ public class StingResource {
 					+ pattern
 					+ "%' ORDER BY last_modified desc LIMIT "
 					+ offset
-					+ ", " + length + ";";
+					+ ", "
+					+ length + ";";
 			ResultSet rs = stmt.executeQuery(query);
 			while (rs.next()) {
 				Sting s = new Sting();
@@ -495,4 +504,5 @@ public class StingResource {
 		return stings;
 	}
 
+*/
 }

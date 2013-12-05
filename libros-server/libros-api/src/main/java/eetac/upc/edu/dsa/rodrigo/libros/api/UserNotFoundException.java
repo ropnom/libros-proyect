@@ -3,7 +3,7 @@ package eetac.upc.edu.dsa.rodrigo.libros.api;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 
-import eetac.upc.edu.dsa.rodrigo.libros.model.BeeterError;
+import eetac.upc.edu.dsa.rodrigo.libros.model.LibrosError;
 
 
 public class UserNotFoundException extends WebApplicationException {
@@ -15,8 +15,8 @@ public class UserNotFoundException extends WebApplicationException {
         public UserNotFoundException() {
                 super(Response
                                 .status(Response.Status.NOT_FOUND)
-                                .entity(new BeeterError(Response.Status.NOT_FOUND
+                                .entity(new LibrosError(Response.Status.NOT_FOUND
                                                 .getStatusCode(), MESSAGE))
-                                .type(MediaType.BEETER_API_ERROR).build());
+                                .type(MediaType.LIBROS_API_ERROR).build());
         }
 }

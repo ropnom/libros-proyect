@@ -16,6 +16,7 @@ public class Libro {
 	private Date fecha_edicion;
 	private Date fecha_impresion;
 	private String editorial;
+	private Date lastUpdate;
 	private List<Link> links = new ArrayList<Link>();
 
 	public int getLibroid() {
@@ -92,6 +93,14 @@ public class Libro {
 
 	public void addLink(Link link) {
 		links.add(link);
+	}
+
+	public Date getLastUpdate() {
+		return lastUpdate;
+	}
+
+	public void setLastUpdate(Date lastUpdate) {
+		this.lastUpdate = lastUpdate;
 	}
 
 }
