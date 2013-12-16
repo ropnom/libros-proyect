@@ -16,24 +16,24 @@ import android.net.ParseException;
 import android.util.Log;
 
 public class LibrosAPI {
-	
+
 	private final static String TAG = LibrosAPI.class.toString();
 	private final static SimpleDateFormat sdf = new SimpleDateFormat(
 			"yyyy-MM-dd HH:mm:ss");
- 
+
 	public LibroCollection getStings(URL url) {
 		LibroCollection stings = new LibroCollection();
- 
+
 		HttpURLConnection urlConnection = null;
 		try {
 			urlConnection = (HttpURLConnection) url.openConnection();
- 
+
 			urlConnection.setRequestProperty("Accept",
-					MediaType.BEETER_API_STING_COLLECTION);
+					MediaType.LIBROS_API_LIBRO_COLLECTION);
 			urlConnection.setRequestMethod("GET");
 			urlConnection.setDoInput(true);
 			urlConnection.connect();
- 
+
 			BufferedReader reader = new BufferedReader(new InputStreamReader(
 					urlConnection.getInputStream()));
 			StringBuilder sb = new StringBuilder();
@@ -41,16 +41,16 @@ public class LibrosAPI {
 			while ((line = reader.readLine()) != null) {
 				sb.append(line);
 			}
- 
+
 			JSONObject jsonObject = new JSONObject(sb.toString());
 			JSONArray jsonLinks = jsonObject.getJSONArray("links");
 			parseLinks(jsonLinks, stings.getLinks());
- 
+
 			JSONArray jsonStings = jsonObject.getJSONArray("stings");
 			for (int i = 0; i < jsonStings.length(); i++) {
 				JSONObject jsonSting = jsonStings.getJSONObject(i);
 				Libro sting = parseSting(jsonSting);
- 
+
 				stings.add(sting);
 			}
 		} catch (IOException e) {
@@ -66,10 +66,10 @@ public class LibrosAPI {
 			if (urlConnection != null)
 				urlConnection.disconnect();
 		}
- 
+
 		return stings;
 	}
- 
+
 	private void parseLinks(JSONArray source, List<Link> links)
 			throws JSONException {
 		for (int i = 0; i < source.length(); i++) {
@@ -82,23 +82,29 @@ public class LibrosAPI {
 			links.add(link);
 		}
 	}
- 
+
 	private Libro parseSting(JSONObject source) throws JSONException,
 			ParseException {
-		Libro sting = new Libro();
-		sting.setAuthor(source.getString("author"));
-		if (source.has("content"))
-			sting.setContent(source.getString("content"));
-		String tsLastModified = source.getString("lastModified").replace("T",
-				" ");
-		sting.setLastModified(sdf.parse(tsLastModified));
-		sting.setStingid(source.getString("stingid"));
-		sting.setSubject(source.getString("subject"));
-		sting.setUsername(source.getString("username"));
- 
+		Libro libro = new Libro();
+		libro.setLibroid(source.getInt("libroid"));
+		libro.setTitulo(source.getString("titulo"));
+		libro.setAutor(source.getString("author"));
+		libro.setLengua(source.getString("lengua"));
+		libro.setEdicion(source.getString("edicion"));
+
+		// libro.setFecha_edicion();
+		// libro.setFecha_impresion();
+		libro.setEditorial(source.getString("editorial"));
+
+		String tsLastModified = source.getString("lastUpdate")
+				.replace("T", " ");
+
+		//libro.setLastUpdate(sdf.parse(tsLastModified));
+		
+		
 		JSONArray jsonStingLinks = source.getJSONArray("links");
-		parseLinks(jsonStingLinks, sting.getLinks());
-		return sting;
+		parseLinks(jsonStingLinks, libro.getLinks());
+		return libro;
 	}
 
 }
