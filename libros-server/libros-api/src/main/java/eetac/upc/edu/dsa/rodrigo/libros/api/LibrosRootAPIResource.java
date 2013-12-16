@@ -27,8 +27,7 @@ public class LibrosRootAPIResource {
 		listalinks.addLink(LibrosAPILinkBuilder.buildURIRootAPI(uriInfo));
 		listalinks.addLink(LibrosAPILinkBuilder.buildTemplatedURIStings(uriInfo, "libros",false));
 		listalinks.addLink(LibrosAPILinkBuilder.buildTemplatedURIStings(uriInfo, "libros", true));	
-		//aki hay un inconcruencia con Raul
-		listalinks.addLink(LibrosAPILinkBuilder.buildURIStings(uriInfo, "libro") );
+		
 		
 				
 		return(listalinks);

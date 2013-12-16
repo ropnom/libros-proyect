@@ -9,6 +9,7 @@ import java.text.SimpleDateFormat;
 import javax.sql.DataSource;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -82,8 +83,12 @@ public class LibroResource {
 				libro.setLastUpdate(rs.getTimestamp("lastUpdate"));
 
 				// añadimos los links
-				libro.addLink(LibrosAPILinkBuilder
-						.buildURISting(uriInfo, libro));
+				libro.addLink(LibrosAPILinkBuilder.buildURILibroId(uriInfo,
+						libro.getLibroid() - 1, "prev"));
+				libro.addLink(LibrosAPILinkBuilder.buildURILibroId(uriInfo,
+						libro.getLibroid(), "self"));
+				libro.addLink(LibrosAPILinkBuilder.buildURILibroId(uriInfo,
+						libro.getLibroid() + 1, "next"));
 			} else {
 				throw new LibroNotFoundException();
 			}
@@ -138,6 +143,11 @@ public class LibroResource {
 		 * (sting.getContent().length() > 500) { throw new BadRequestException(
 		 * "Content length must be less or equal than 500 characters"); }
 		 */
+		if (!security.isUserInRole("admin")) {
+
+			throw new ForbiddenException("You are nor allowed");
+
+		}
 
 		// realizamos conexion
 		Connection conn = null;
@@ -152,17 +162,16 @@ public class LibroResource {
 		// leemos lo que nos manda y lo insertamos enla base de datos
 		try {
 			// realizamos la consulta
-			stmt = conn.createStatement();			
+			stmt = conn.createStatement();
 			SimpleDateFormat dt1 = new SimpleDateFormat("yyyy-MM-dd");
 			String edicion = dt1.format(libro.getFecha_edicion());
 			String impresion = dt1.format(libro.getFecha_impresion());
-						
+
 			String sql = "insert into libros (titulo, autor, lengua, edicion, fecha_edicion, fecha_impresion, editorial)";
 			sql += "values ('" + libro.getTitulo() + "', '" + libro.getAutor()
 					+ "', '" + libro.getLengua() + "','" + libro.getEdicion()
-					+ "','" + edicion + "','"
-					+ impresion + "','" + libro.getEditorial()
-					+ "');";
+					+ "','" + edicion + "','" + impresion + "','"
+					+ libro.getEditorial() + "');";
 
 			// le indicamos que nso devuelva la primary key que le genere a la
 			// nueva entrada
@@ -174,13 +183,18 @@ public class LibroResource {
 				rs.close();
 				// TODO: Retrieve the created sting from the database to get all
 				// the remaining fields
-				sql = "select lastUpdate from libros where libroid="
-						+ id;
+				sql = "select lastUpdate from libros where libroid=" + id;
 
 				rs = stmt.executeQuery(sql);
 				rs.next();
 				libro.setLibroid(id);
 				libro.setLastUpdate(rs.getTimestamp("lastUpdate"));
+				libro.addLink(LibrosAPILinkBuilder.buildURILibroId(uriInfo,
+						libro.getLibroid() - 1, "prev"));
+				libro.addLink(LibrosAPILinkBuilder.buildURILibroId(uriInfo,
+						libro.getLibroid(), "self"));
+				libro.addLink(LibrosAPILinkBuilder.buildURILibroId(uriInfo,
+						libro.getLibroid() + 1, "next"));
 			} else {
 				// TODO: Throw exception, something has failed. Don't do now
 			}
@@ -202,7 +216,7 @@ public class LibroResource {
 		}
 		return libro;
 	}
-	
+
 	@PUT
 	@Path("/{libroid}")
 	@Consumes(MediaType.LIBROS_API_LIBRO)
@@ -211,25 +225,25 @@ public class LibroResource {
 		// TODO: Update in the database the record identified by stingid with
 		// the data values in sting
 		Statement stmt = null;
-		
-		/*
-		if (sting.getSubject().length() > 100) {
-			throw new BadRequestException(
-					"Subject length must be less or equal than 100 characters");
-		}
-		if (sting.getContent().length() > 500) {
-			throw new BadRequestException(
-					"Content length must be less or equal than 500 characters");
+
+		if (!security.isUserInRole("admin")) {
+
+			throw new ForbiddenException("You are nor allowed");
+
 		}
 
-		if (security.isUserInRole("registered")) {
-			if (security.getUserPrincipal().getName()
-					.equals(sting.getUsername())) {
-				throw new ForbiddenException("You are nor allowed");
-			}
-		}
-		*/
-		
+		/*
+		 * if (sting.getSubject().length() > 100) { throw new
+		 * BadRequestException(
+		 * "Subject length must be less or equal than 100 characters"); } if
+		 * (sting.getContent().length() > 500) { throw new BadRequestException(
+		 * "Content length must be less or equal than 500 characters"); }
+		 * 
+		 * if (security.isUserInRole("registered")) { if
+		 * (security.getUserPrincipal().getName() .equals(sting.getUsername()))
+		 * { throw new ForbiddenException("You are nor allowed"); } }
+		 */
+
 		// arrancamos la conexion
 		Connection conn = null;
 		try {
@@ -248,29 +262,34 @@ public class LibroResource {
 			// creamos el statement y la consulta
 			stmt = conn.createStatement();
 			String sql = "update  libros SET libros.titulo='"
-					+ libro.getTitulo() + "',libros.autor='"
-					+ libro.getAutor() + "', libros.lengua='"
-					+ libro.getLengua() + "', libros.edicion='"
-					+ libro.getEdicion() + "', libros.fecha_edicion='"
-					+ edicion + "', libros.fecha_impresion='"
-					+ impresion + "', libros.editorial='"
-					+  libro.getEditorial()+ "' where libroid=" + libroid;
+					+ libro.getTitulo() + "',libros.autor='" + libro.getAutor()
+					+ "', libros.lengua='" + libro.getLengua()
+					+ "', libros.edicion='" + libro.getEdicion()
+					+ "', libros.fecha_edicion='" + edicion
+					+ "', libros.fecha_impresion='" + impresion
+					+ "', libros.editorial='" + libro.getEditorial()
+					+ "' where libroid=" + libroid;
 			// realizamos la consulta
 
 			int rows = stmt.executeUpdate(sql);
-			
+
 			if (rows == 0)
 				throw new LibroNotFoundException();
 
 			sql = "select lastUpdate from libros where libroid=" + libroid;
-			
+
 			ResultSet rs = stmt.executeQuery(sql);
 			if (rs.next()) {
 				// creamos el sting
 				libro.setLastUpdate(rs.getTimestamp("lastUpdate"));
 				// añadimos los links
-				libro.addLink(LibrosAPILinkBuilder
-						.buildURISting(uriInfo, libro));
+				libro.addLink(LibrosAPILinkBuilder.buildURILibroId(uriInfo,
+						libro.getLibroid() - 1, "prev"));
+				libro.addLink(LibrosAPILinkBuilder.buildURILibroId(uriInfo,
+						libro.getLibroid(), "self"));
+				libro.addLink(LibrosAPILinkBuilder.buildURILibroId(uriInfo,
+						libro.getLibroid() + 1, "next"));
+
 			} else {
 				throw new LibroNotFoundException();
 			}
@@ -292,7 +311,7 @@ public class LibroResource {
 
 		return libro;
 	}
-	
+
 	@DELETE
 	@Path("/{libroid}")
 	public void deleteLibro(@PathParam("libroid") String libroid) {
@@ -306,6 +325,11 @@ public class LibroResource {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			throw new ServiceUnavailableException(e.getMessage());
+		}
+		if (!security.isUserInRole("admin")) {
+
+			throw new ForbiddenException("You are nor allowed");
+
 		}
 
 		// hacemso la consulta y el array de stings
@@ -333,22 +357,21 @@ public class LibroResource {
 			}
 		}
 	}
-	
+
 	@GET
 	@Path("/search")
 	@Produces(MediaType.LIBROS_API_LIBRO_COLLECTION)
 	public LibroCollection getSearch(@QueryParam("titulo") String titulo,
-			@QueryParam("autor") String autor,
-			 @Context Request req) {
-		
-		boolean caso = true;;
-		
-		if (titulo == null && autor== null)
+			@QueryParam("autor") String autor, @Context Request req) {
+
+		boolean caso = true;
+		;
+
+		if (titulo == null && autor == null)
 			throw new BadRequestException(
-					"Titulo or Autor is mandatory parameter");		
-		if(titulo==null)
+					"Titulo or Autor is mandatory parameter");
+		if (titulo == null)
 			caso = false;
-		
 
 		// TODO: Retrieve all stings stored in the database, instantiate one
 		// Sting for each one and store them in the StingCollection.
@@ -364,34 +387,31 @@ public class LibroResource {
 		}
 		String[] palabras;
 		String busqueda;
-		if(caso)
-		{
-		 titulo.replace("^A-Za-z\\s]", "");			
-		 palabras = titulo.split(" ");
-		 busqueda = "titulo";
-		}
-		else
-		{
-		 autor.replace("^A-Za-z\\s]", "");			
-		 palabras = autor.split(" ");
-		 busqueda = "autor";
+		if (caso) {
+			titulo.replace("^A-Za-z\\s]", "");
+			palabras = titulo.split(" ");
+			busqueda = "titulo";
+		} else {
+			autor.replace("^A-Za-z\\s]", "");
+			palabras = autor.split(" ");
+			busqueda = "autor";
 		}
 		try {
-			
+
 			int i = 1;
 			String query = "Select * from libros where ";
-			query += "libros."+busqueda+" LIKE '%"+palabras[0]+"%' ";
-			
-			while(i<palabras.length)
-			{
-				query += "or libros."+busqueda+" LIKE '%"+palabras[i]+"%' ";
+			query += "libros." + busqueda + " LIKE '%" + palabras[0] + "%' ";
+
+			while (i < palabras.length) {
+				query += "or libros." + busqueda + " LIKE '%" + palabras[i]
+						+ "%' ";
 				i++;
 			}
-			query += ";";			
+			query += ";";
 			ResultSet rs = stmt.executeQuery(query);
-			
+
 			while (rs.next()) {
-				
+
 				Libro s = new Libro();
 				s.setLibroid(rs.getInt("libroid"));
 				s.setTitulo(rs.getString("titulo"));
@@ -402,9 +422,13 @@ public class LibroResource {
 				s.setFecha_impresion(rs.getDate("fecha_impresion"));
 				s.setEditorial(rs.getString("editorial"));
 				s.setLastUpdate(rs.getTimestamp("lastUpdate"));
-				s.addLink(LibrosAPILinkBuilder
-						.buildURISting(uriInfo, s));
-				
+				s.addLink(LibrosAPILinkBuilder.buildURILibroId(uriInfo,
+						s.getLibroid() - 1, "prev"));
+				s.addLink(LibrosAPILinkBuilder.buildURILibroId(uriInfo,
+						s.getLibroid(), "self"));
+				s.addLink(LibrosAPILinkBuilder.buildURILibroId(uriInfo,
+						s.getLibroid() + 1, "next"));
+
 				libros.add(s);
 			}
 			rs.close();
@@ -419,126 +443,81 @@ public class LibroResource {
 		}
 		return libros;
 	}
-	
-	
-
 
 	/*
-	// realizamos los metodos GET que nos devuevle los stings de la base de
-	// datos
-	@GET
-	@Produces(MediaType.LIBROS_API_LIBRO_COLLECTION)
-	public LibroCollection getStings(@QueryParam("username") String username,
-			@QueryParam("offset") String offset,
-			@QueryParam("length") String length) {
-
-		if ((offset == null) || (length == null))
-			throw new BadRequestException(
-					"offset and length are mandatory parameters");
-		int ioffset, ilength;
-		try {
-			ioffset = Integer.parseInt(offset);
-			if (ioffset < 0)
-				throw new NumberFormatException();
-		} catch (NumberFormatException e) {
-			throw new BadRequestException(
-					"offset must be an integer greater or equal than 0.");
-		}
-		try {
-			ilength = Integer.parseInt(length);
-			if (ilength < 1)
-				throw new NumberFormatException();
-		} catch (NumberFormatException e) {
-			throw new BadRequestException(
-					"length must be an integer greater or equal than 0.");
-		}
-
-		LibroCollection stings = new LibroCollection();
-
-		Statement stmt = null;
-
-		// arrancamos la conexion
-		Connection conn = null;
-		try {
-			conn = ds.getConnection();
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new ServiceUnavailableException(e.getMessage());
-		}
-
-		// hacemso la consulta y el array de stings
-		try {
-			// creamos el statement y la consulta
-			stmt = conn.createStatement();
-			String sql;
-			if (username == null) {
-				sql = "select users.name, stings.* from users, stings where users.username=stings.username ORDER BY last_modified DESC limit "
-						+ offset + "," + length + " ";
-			} else {
-				sql = "select users.name, stings.* from users, stings where users.username=stings.username and stings.username='"
-						+ username
-						+ "' ORDER BY last_modified DESC limit "
-						+ offset + "," + length + " ";
-			}
-			// realizamos la consulta
-			ResultSet rs = stmt.executeQuery(sql);
-			while (rs.next()) {
-				// creamos el sting
-				Sting sting = new Sting();
-				sting.setStingid(rs.getString("stingid"));
-				sting.setUsername(rs.getString("username"));
-				sting.setAuthor(rs.getString("name"));
-				sting.setContent(rs.getString("content"));
-				sting.setSubject(rs.getString("subject"));
-				sting.setLastModified(rs.getTimestamp("last_modified"));
-
-				// añadimos los links
-				sting.addLink(LibrosAPILinkBuilder
-						.buildURISting(uriInfo, sting));
-
-				// añadimos el sting a la lista
-				stings.addSting(sting);
-			}
-			rs.close();
-
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new InternalServerException(e.getMessage());
-		} finally {
-
-			try {
-				stmt.close();
-				conn.close();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-
-		stings.addLink(BeeterAPILinkBuilder.buildURIStings(uriInfo, offset,
-				length, username, "self"));
-
-		if ((ioffset - ilength) > 0) {
-			stings.addLink(BeeterAPILinkBuilder.buildURIStings(uriInfo, offset,
-					length, username, "previous"));
-		} else {
-			int total = stings.getStings().size();
-			int puntero = total - ilength;
-
-			stings.addLink(BeeterAPILinkBuilder.buildURIStings(uriInfo,
-					Integer.toString(puntero), length, username, "previous"));
-		}
-
-		// devolvemos el sting
-		return stings;
-	}
-
-	// realizamos el metodo POST
-
-	
-	
-
-	
-*/
+	 * // realizamos los metodos GET que nos devuevle los stings de la base de
+	 * // datos
+	 * 
+	 * @GET
+	 * 
+	 * @Produces(MediaType.LIBROS_API_LIBRO_COLLECTION) public LibroCollection
+	 * getStings(@QueryParam("username") String username,
+	 * 
+	 * @QueryParam("offset") String offset,
+	 * 
+	 * @QueryParam("length") String length) {
+	 * 
+	 * if ((offset == null) || (length == null)) throw new BadRequestException(
+	 * "offset and length are mandatory parameters"); int ioffset, ilength; try
+	 * { ioffset = Integer.parseInt(offset); if (ioffset < 0) throw new
+	 * NumberFormatException(); } catch (NumberFormatException e) { throw new
+	 * BadRequestException(
+	 * "offset must be an integer greater or equal than 0."); } try { ilength =
+	 * Integer.parseInt(length); if (ilength < 1) throw new
+	 * NumberFormatException(); } catch (NumberFormatException e) { throw new
+	 * BadRequestException(
+	 * "length must be an integer greater or equal than 0."); }
+	 * 
+	 * LibroCollection stings = new LibroCollection();
+	 * 
+	 * Statement stmt = null;
+	 * 
+	 * // arrancamos la conexion Connection conn = null; try { conn =
+	 * ds.getConnection(); } catch (SQLException e) { // TODO Auto-generated
+	 * catch block e.printStackTrace(); throw new
+	 * ServiceUnavailableException(e.getMessage()); }
+	 * 
+	 * // hacemso la consulta y el array de stings try { // creamos el statement
+	 * y la consulta stmt = conn.createStatement(); String sql; if (username ==
+	 * null) { sql =
+	 * "select users.name, stings.* from users, stings where users.username=stings.username ORDER BY last_modified DESC limit "
+	 * + offset + "," + length + " "; } else { sql =
+	 * "select users.name, stings.* from users, stings where users.username=stings.username and stings.username='"
+	 * + username + "' ORDER BY last_modified DESC limit " + offset + "," +
+	 * length + " "; } // realizamos la consulta ResultSet rs =
+	 * stmt.executeQuery(sql); while (rs.next()) { // creamos el sting Sting
+	 * sting = new Sting(); sting.setStingid(rs.getString("stingid"));
+	 * sting.setUsername(rs.getString("username"));
+	 * sting.setAuthor(rs.getString("name"));
+	 * sting.setContent(rs.getString("content"));
+	 * sting.setSubject(rs.getString("subject"));
+	 * sting.setLastModified(rs.getTimestamp("last_modified"));
+	 * 
+	 * // añadimos los links sting.addLink(LibrosAPILinkBuilder
+	 * .buildURISting(uriInfo, sting));
+	 * 
+	 * // añadimos el sting a la lista stings.addSting(sting); } rs.close();
+	 * 
+	 * } catch (SQLException e) { // TODO Auto-generated catch block
+	 * e.printStackTrace(); throw new InternalServerException(e.getMessage()); }
+	 * finally {
+	 * 
+	 * try { stmt.close(); conn.close(); } catch (Exception e) {
+	 * e.printStackTrace(); } }
+	 * 
+	 * stings.addLink(BeeterAPILinkBuilder.buildURIStings(uriInfo, offset,
+	 * length, username, "self"));
+	 * 
+	 * if ((ioffset - ilength) > 0) {
+	 * stings.addLink(BeeterAPILinkBuilder.buildURIStings(uriInfo, offset,
+	 * length, username, "previous")); } else { int total =
+	 * stings.getStings().size(); int puntero = total - ilength;
+	 * 
+	 * stings.addLink(BeeterAPILinkBuilder.buildURIStings(uriInfo,
+	 * Integer.toString(puntero), length, username, "previous")); }
+	 * 
+	 * // devolvemos el sting return stings; }
+	 * 
+	 * // realizamos el metodo POST
+	 */
 }
