@@ -9,19 +9,25 @@ import javax.sql.DataSource;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.ForbiddenException;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.EntityTag;
+import javax.ws.rs.core.Request;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 
 import eetac.upc.edu.dsa.rodrigo.libros.api.links.ResenasAPILinkBuilder;
 import eetac.upc.edu.dsa.rodrigo.libros.api.model.Resena;
 
-@Path("/resena")
+//@Path("/resena")
+@Path("/libros/{libroid}/resena")
 public class ResenaResource {
 
 	@Context
@@ -36,7 +42,7 @@ public class ResenaResource {
 	@POST
 	@Consumes(MediaType.LIBROS_API_RESENA)
 	@Produces(MediaType.LIBROS_API_RESENA)
-	public Resena createResena(Resena resena) {
+	public Resena createResena(@PathParam("libroid") String libroid, Resena resena) {
 
 		Statement stmt = null;
 
@@ -50,13 +56,14 @@ public class ResenaResource {
 
 		// realizamos conexion
 
-		if (security.isUserInRole("registered")) {			
+		if (security.isUserInRole("registered")) {
 			if (!security.getUserPrincipal().getName()
 					.equals(resena.getUsername())) {
 				throw new ForbiddenException("You are nor allowed");
 			}
 		}
 
+		resena.setLibroid(Integer.parseInt(libroid));
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
@@ -101,8 +108,9 @@ public class ResenaResource {
 				resena.setContent(rs.getString("content"));
 				resena.setUsername(rs.getString("username"));
 				resena.setLasupdate(rs.getDate("lastUpdate"));
-				// resena.addLink(ResenasAPILinkBuilder.buildURIResenaId(uriInfo,
-				// resena.getResenaid()));
+				resena.addLink(ResenasAPILinkBuilder.buildURIResenaId(uriInfo,
+						resena.getLibroid(), resena.getResenaid(), "self"));
+			
 
 			} else {
 				// TODO: Throw exception, something has failed. Don't do now
@@ -130,7 +138,7 @@ public class ResenaResource {
 	@Path("/{resenaid}")
 	@Consumes(MediaType.LIBROS_API_RESENA)
 	@Produces(MediaType.LIBROS_API_RESENA)
-	public Resena updateSting(@PathParam("resenaid") String resenaid,
+	public Resena updateResena(@PathParam("resenaid") String resenaid,
 			Resena resena) {
 		// TODO: Update in the database the record identified by stingid with
 		// the data values in sting
@@ -192,8 +200,7 @@ public class ResenaResource {
 				resena.setLasupdate(rs.getTimestamp("lastUpdate"));
 				// añadimos los links
 				resena.addLink(ResenasAPILinkBuilder.buildURIResenaId(uriInfo,
-						resena.getResenaid()));
-
+						resena.getLibroid(), resena.getResenaid(), "self"));
 			} else {
 				throw new LibroNotFoundException();
 			}
@@ -263,5 +270,68 @@ public class ResenaResource {
 			}
 		}
 	}
+	
+	@GET
+    @Path("/{resenaid}")
+    @Produces(MediaType.LIBROS_API_RESENA)
+    public Response getResena(@PathParam("libroid") String libroid, @PathParam("resenaid") String resenaid, @Context Request req){
+    //public Response getResena(@PathParam("libroid") String libroid, @Context Request req){
+            
+            // Create CacheControl
+            CacheControl cc = new CacheControl();
+            
+            Resena resena = new Resena();
+            
+            Connection con = null;
+            Statement stmt = null;
+            try {
+                    con = ds.getConnection();
+            } catch (SQLException e) {
+                    throw new ServiceUnavailableException(e.getMessage());
+            }
+            
+            try {
+                    stmt = con.createStatement();
+                    String query = "SELECT * FROM resenas WHERE resenaid=" + resenaid + " and libroid="+libroid+";";
+                    ResultSet rs = stmt.executeQuery(query);
+                    if (rs.next()) {
+                            resena.setContent(rs.getString("content"));
+                            resena.setLasupdate(rs.getTimestamp("lastUpdate"));
+                            resena.setLibroid(rs.getInt("libroid"));
+                            resena.setResenaid(rs.getInt("resenaid"));
+                            resena.setUsername(rs.getString("username"));                
+                            resena.addLink(ResenasAPILinkBuilder.buildURIResenaId(uriInfo, Integer.parseInt(libroid), Integer.parseInt(resenaid), "self"));
+                    } else
+                            throw new ResenaNotFoundException();
+            } catch (SQLException e) {
+                    throw new InternalServerException(e.getMessage());
+            } finally {
+                    try {
+                            con.close();
+                            stmt.close();
+                    } catch (Exception e) {
+                    }
+            }
+
+            // Calculate the ETag on last modified date of user resource
+            EntityTag eTag = new EntityTag(Integer.toString(resena.getLasupdate().hashCode()));
+
+            // Verify if it matched with etag available in http request
+            Response.ResponseBuilder rb = req.evaluatePreconditions(eTag);
+
+            // If ETag matches the rb will be non-null;
+            // Use the rb to return the response without any further processing
+            if (rb != null) {
+                    return rb.cacheControl(cc).tag(eTag).build();
+            }
+
+            // If rb is null then either it is first time request; or resource is
+            // modified
+            // Get the updated representation and return with Etag attached to it
+            rb = Response.ok(resena).cacheControl(cc).tag(eTag);
+
+            return rb.build();
+    }
+
 
 }
