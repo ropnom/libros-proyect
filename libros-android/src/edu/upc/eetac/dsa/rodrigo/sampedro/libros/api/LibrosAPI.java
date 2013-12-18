@@ -22,7 +22,7 @@ public class LibrosAPI {
 			"yyyy-MM-dd HH:mm:ss");
 
 	public LibroCollection getStings(URL url) {
-		LibroCollection stings = new LibroCollection();
+		LibroCollection libros = new LibroCollection();
 
 		HttpURLConnection urlConnection = null;
 		try {
@@ -44,14 +44,14 @@ public class LibrosAPI {
 
 			JSONObject jsonObject = new JSONObject(sb.toString());
 			JSONArray jsonLinks = jsonObject.getJSONArray("links");
-			parseLinks(jsonLinks, stings.getLinks());
+			parseLinks(jsonLinks, libros.getLinks());
 
-			JSONArray jsonStings = jsonObject.getJSONArray("stings");
+			JSONArray jsonStings = jsonObject.getJSONArray("libros");
 			for (int i = 0; i < jsonStings.length(); i++) {
-				JSONObject jsonSting = jsonStings.getJSONObject(i);
-				Libro sting = parseSting(jsonSting);
+				JSONObject jsonLibro= jsonStings.getJSONObject(i);
+				Libro libro = parseLibro(jsonLibro);
 
-				stings.add(sting);
+				libros.add(libro);
 			}
 		} catch (IOException e) {
 			Log.e(TAG, e.getMessage(), e);
@@ -67,7 +67,7 @@ public class LibrosAPI {
 				urlConnection.disconnect();
 		}
 
-		return stings;
+		return libros;
 	}
 
 	private void parseLinks(JSONArray source, List<Link> links)
@@ -83,7 +83,7 @@ public class LibrosAPI {
 		}
 	}
 
-	private Libro parseSting(JSONObject source) throws JSONException,
+	private Libro parseLibro(JSONObject source) throws JSONException,
 			ParseException {
 		Libro libro = new Libro();
 		libro.setLibroid(source.getInt("libroid"));
