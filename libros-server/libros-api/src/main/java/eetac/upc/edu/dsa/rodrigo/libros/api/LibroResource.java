@@ -198,11 +198,7 @@ public class LibroResource {
 		
 		//añadir ellink a lso libvros?¿?¿
 
-		//stings.addLink(BeeterAPILinkBuilder.buildURIStings(uriInfo, offset,
-		//		length, username, "self"));
-
-		
-
+		libros.addLink(LibrosAPILinkBuilder.buildURILibros(uriInfo, "self"));
 		// devolvemos el sting
 		return libros;
 	}

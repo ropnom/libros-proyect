@@ -44,7 +44,7 @@ public class LibrosAPI {
 
 			JSONObject jsonObject = new JSONObject(sb.toString());
 			JSONArray jsonLinks = jsonObject.getJSONArray("links");
-			parseLinks(jsonLinks, libros.getLinks());
+			//parseLinks(jsonLinks, libros.getLinks());
 
 			JSONArray jsonStings = jsonObject.getJSONArray("libros");
 			for (int i = 0; i < jsonStings.length(); i++) {
@@ -88,7 +88,7 @@ public class LibrosAPI {
 		Libro libro = new Libro();
 		libro.setLibroid(source.getInt("libroid"));
 		libro.setTitulo(source.getString("titulo"));
-		libro.setAutor(source.getString("author"));
+		libro.setAutor(source.getString("autor"));
 		libro.setLengua(source.getString("lengua"));
 		libro.setEdicion(source.getString("edicion"));
 

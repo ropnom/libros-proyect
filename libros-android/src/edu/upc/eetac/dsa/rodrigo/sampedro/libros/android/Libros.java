@@ -23,23 +23,26 @@ public class Libros extends ListActivity
 {
 	private final static String TAG = Libros.class.getName();
     /** Called when the activity is first created. */
-	private static final String[] items = { "lorem", "ipsum", "dolor", "sit",
-		"amet", "consectetuer", "adipiscing", "elit", "morbi", "vel",
-		"ligula", "vitae", "arcu", "aliquet", "mollis", "etiam", "vel",
-		"erat", "placerat", "ante", "porttitor", "sodales", "pellentesque",
-		"augue", "purus" };
+//	private static final String[] items = { "lorem", "ipsum", "dolor", "sit",
+//		"amet", "consectetuer", "adipiscing", "elit", "morbi", "vel",
+//		"ligula", "vitae", "arcu", "aliquet", "mollis", "etiam", "vel",
+//		"erat", "placerat", "ante", "porttitor", "sodales", "pellentesque",
+//		"augue", "purus" };
 	
-	private ArrayAdapter<String> adapter;
+	//private ArrayAdapter<String> adapter;
+	private LibroAdapter adapter;
 	String serverAddress;
 	String serverPort;
 	LibrosAPI api;
 	ProgressDialog pd;
+	ArrayList<Libro> librosList;
 
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         Log.d(TAG, "onCreate()");
+        librosList = new ArrayList<Libro>();
         Authenticator.setDefault(new Authenticator() {
         	protected PasswordAuthentication getPasswordAuthentication() {
         		return new PasswordAuthentication("alicia", "alicia"
@@ -63,7 +66,7 @@ public class Libros extends ListActivity
     	URL url = null;
     	try {
     		url = new URL("http://" + serverAddress + ":" + serverPort
-    				+ "/libro-api/libros");
+    				+ "/libros-api/libros");
     	} catch (MalformedURLException e) {
     		Log.d(TAG, e.getMessage(), e);
     		finish();
@@ -71,9 +74,14 @@ public class Libros extends ListActivity
     	(new FetchStingsTask()).execute(url);
      
     	setContentView(R.layout.relative);
-    	adapter = new ArrayAdapter<String>(this,
-    			android.R.layout.simple_list_item_1, items);
+//    	adapter = new ArrayAdapter<String>(this,
+//    			android.R.layout.simple_list_item_1, items);
+    	adapter = new LibroAdapter(this, librosList);
     	setListAdapter(adapter);
+    }
+    private void addLibros(LibroCollection libros){
+    	librosList.addAll(libros.getLibros());
+    	adapter.notifyDataSetChanged();
     }
     
     private class FetchStingsTask extends AsyncTask<URL, Void, LibroCollection> {
@@ -81,6 +89,7 @@ public class Libros extends ListActivity
      
     	@Override
     	protected LibroCollection doInBackground(URL... params) {
+    		//parametros pasados a la funcion del tipo en este acaos url
     		LibroCollection libros = api.getLibros(params[0]);
     		return libros;
     	}
@@ -91,6 +100,7 @@ public class Libros extends ListActivity
     		for (Libro s : libros) {
     			Log.d(TAG, s.getLibroid() + "-" + s.getAutor());
     		}
+    		addLibros(result);
     		if (pd != null) {
     			pd.dismiss();
     		}
