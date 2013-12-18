@@ -128,6 +128,84 @@ public class LibroResource {
 
 		return rb.build();
 	}
+	
+	@GET
+	@Produces(MediaType.LIBROS_API_LIBRO_COLLECTION)
+	public LibroCollection getLibros() {
+
+		
+		
+		LibroCollection libros = new LibroCollection();
+
+		Statement stmt = null;
+
+		// arrancamos la conexion
+		Connection conn = null;
+		try {
+			conn = ds.getConnection();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new ServiceUnavailableException(e.getMessage());
+		}
+
+		// hacemso la consulta y el array de stings
+		try {
+			// creamos el statement y la consulta
+			stmt = conn.createStatement();
+			String sql = "select * from libros ;";
+			
+			// realizamos la consulta
+			ResultSet rs = stmt.executeQuery(sql);
+			while (rs.next()) {
+				// creamos el sting
+				Libro libro = new Libro();
+				libro.setLibroid(rs.getInt("libroid"));
+				libro.setTitulo(rs.getString("titulo"));
+				libro.setAutor(rs.getString("autor"));
+				libro.setLengua(rs.getString("lengua"));
+				libro.setEdicion(rs.getString("edicion"));
+				libro.setFecha_edicion(rs.getDate("fecha_edicion"));
+				libro.setFecha_impresion(rs.getDate("fecha_impresion"));
+				libro.setEditorial(rs.getString("editorial"));
+				libro.setLastUpdate(rs.getTimestamp("lastUpdate"));
+
+				// añadimos los links
+				libro.addLink(LibrosAPILinkBuilder.buildURILibroId(uriInfo,
+						libro.getLibroid() - 1, "prev"));
+				libro.addLink(LibrosAPILinkBuilder.buildURILibroId(uriInfo,
+						libro.getLibroid(), "self"));
+				libro.addLink(LibrosAPILinkBuilder.buildURILibroId(uriInfo,
+						libro.getLibroid() + 1, "next"));
+				// añadimos el sting a la lista
+				libros.add(libro);
+			}
+			rs.close();
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new InternalServerException(e.getMessage());
+		} finally {
+
+			try {
+				stmt.close();
+				conn.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		
+		//añadir ellink a lso libvros?¿?¿
+
+		//stings.addLink(BeeterAPILinkBuilder.buildURIStings(uriInfo, offset,
+		//		length, username, "self"));
+
+		
+
+		// devolvemos el sting
+		return libros;
+	}
 
 	@POST
 	@Consumes(MediaType.LIBROS_API_LIBRO)

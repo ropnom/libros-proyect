@@ -21,7 +21,7 @@ public class LibrosAPI {
 	private final static SimpleDateFormat sdf = new SimpleDateFormat(
 			"yyyy-MM-dd HH:mm:ss");
 
-	public LibroCollection getStings(URL url) {
+	public LibroCollection getLibros(URL url) {
 		LibroCollection libros = new LibroCollection();
 
 		HttpURLConnection urlConnection = null;
