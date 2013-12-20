@@ -10,11 +10,13 @@ import java.util.Properties;
 
 import android.app.ListActivity;
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.content.res.AssetManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.ArrayAdapter;
+import android.view.View;
+import android.widget.ListView;
 import edu.upc.eetac.dsa.rodrigo.sampedro.libros.api.Libro;
 import edu.upc.eetac.dsa.rodrigo.sampedro.libros.api.LibroCollection;
 import edu.upc.eetac.dsa.rodrigo.sampedro.libros.api.LibrosAPI;
@@ -82,6 +84,33 @@ public class Libros extends ListActivity
     private void addLibros(LibroCollection libros){
     	librosList.addAll(libros.getLibros());
     	adapter.notifyDataSetChanged();
+    }
+    
+    @Override
+    protected void onListItemClick(ListView l, View v, int position, long id) {
+    	Libro libro = librosList.get(position);
+     
+    	// HATEOAS version
+    	URL url = null;
+    	try {
+    		url = new URL(libro.getLinks().get(1).getUri());
+    	} catch (MalformedURLException e) {
+    		return;
+    	}
+     
+    	// No HATEOAS
+    	// URL url = null;
+    	// try {
+    	// url = new URL("http://" + serverAddress + ":" + serverPort
+    	// + "/beeter-api/stings/" + id);
+    	// } catch (MalformedURLException e) {
+    	// return;
+    	// }
+    	Log.d(TAG, url.toString());
+    	
+    	Intent intent = new Intent(this, LibroDetail.class);
+    	intent.putExtra("url", url.toString());
+    	startActivity(intent);
     }
     
     private class FetchStingsTask extends AsyncTask<URL, Void, LibroCollection> {

@@ -70,6 +70,44 @@ public class LibrosAPI {
 		return libros;
 	}
 
+	public Libro getLibro(URL url) {
+		Libro libro= new Libro();
+
+		HttpURLConnection urlConnection = null;
+		try {
+			urlConnection = (HttpURLConnection) url.openConnection();
+			urlConnection.setRequestProperty("Accept",
+					MediaType.LIBROS_API_LIBRO );
+			urlConnection.setRequestMethod("GET");
+			urlConnection.setDoInput(true);
+			urlConnection.connect();
+			BufferedReader reader = new BufferedReader(new InputStreamReader(
+					urlConnection.getInputStream()));
+			StringBuilder sb = new StringBuilder();
+			String line = null;
+			while ((line = reader.readLine()) != null) {
+				sb.append(line);
+			}
+
+			JSONObject jsonLibro = new JSONObject(sb.toString());
+			libro = parseLibro(jsonLibro);
+		} catch (IOException e) {
+			Log.e(TAG, e.getMessage(), e);
+			return null;
+		} catch (JSONException e) {
+			Log.e(TAG, e.getMessage(), e);
+			return null;
+		} catch (ParseException e) {
+			Log.e(TAG, e.getMessage(), e);
+			return null;
+		} finally {
+			if (urlConnection != null)
+				urlConnection.disconnect();
+		}
+
+		return libro;
+	}
+	
 	private void parseLinks(JSONArray source, List<Link> links)
 			throws JSONException {
 		for (int i = 0; i < source.length(); i++) {
