@@ -439,7 +439,7 @@ public class LibroResource {
 			@QueryParam("autor") String autor, @Context Request req) {
 
 		boolean caso = true;
-		;
+		
 
 		if (titulo == null && autor == null)
 			throw new BadRequestException(
